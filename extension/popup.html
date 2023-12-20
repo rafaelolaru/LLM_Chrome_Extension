@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Interface</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 300px;
+            font-family: 'Arial', sans-serif;
+        }
+        #chatArea {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-bottom: none;
+        }
+        .message {
+            padding: 10px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+        .user {
+            background-color: #007bff;
+            color: white;
+            align-self: flex-end;
+            margin-left: 30%;
+        }
+        .server .message-content {
+            display: flex;
+            align-items: center;
+        }
+        .server .message-icon {
+            width: 16px;
+            height: 16px;
+            background-image: url('images/icon16.png'); /* Adjust path as necessary */
+            background-size: cover;
+            margin-right: 10px;
+        }
+        .server .message-text {
+            flex-grow: 1;
+        }
+        .server {
+            background-color: #e5e5ea;
+            color: black;
+            align-self: flex-start;
+            margin-right: 30%;
+        }
+        #inputArea {
+            display: flex;
+            border: 1px solid #ddd;
+            border-top: none;
+            padding: 5px;
+            background-color: #fff;
+        }
+        #inputText {
+            flex-grow: 1;
+            height: 40px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            padding: 0 15px;
+            margin-right: 10px;
+        }
+        #submit {
+            background-color: #007bff;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        #submit:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div id="chatArea"></div>
+    <div id="inputArea">
+        <input type="text" id="inputText" placeholder="Type a message...">
+        <button id="submit">Send</button>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>
