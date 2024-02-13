@@ -74,6 +74,28 @@ function loadMessages() {
     });
 }
 
+function setupMessageSubmission() {
+    const inputElement = document.getElementById('inputText');
+
+    // Event listener for the button
+    const submitButton = document.getElementById('submit');
+    submitButton.addEventListener('click', () => {
+        const inputText = inputElement.value.trim();
+        if (inputText) {
+            sendUserMessage(inputText);
+            inputElement.value = ''; // Clear input field after sending the message
+        }
+    });
+
+    // Event listener for the Enter key
+    inputElement.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') { // 13 is the Enter key
+            event.preventDefault(); // Prevent the default action to stop it from submitting a form if any
+            submitButton.click(); // Trigger the button click programmatically
+        }
+    });
+}
+
 function fetchArticleContentAndSendMessage(inputText) {
     chrome.runtime.sendMessage({action: "fetchArticleContent", content: inputText}, function(response) {
         addMessage(response.result, 'server');

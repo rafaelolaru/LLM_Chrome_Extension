@@ -6,22 +6,25 @@
         body, html {
             margin: 0;
             padding: 0;
-            width: 300px;
+            width: 500px;
+            min-height: 600px;
+            overflow-y: hidden;
             font-family: 'Arial', sans-serif;
         }
         #chatArea {
-            height: 300px;
+            height: 550px;
             overflow-y: auto;
             border: 1px solid #ddd;
             padding: 10px;
             background-color: #f9f9f9;
             border-bottom: none;
+            margin-bottom: 50px;
         }
         .message {
             padding: 10px;
             border-radius: 12px;
             margin-bottom: 10px;
-            max-width: 70%;
+            max-width: 90%;
             word-wrap: break-word;
         }
         .user {
@@ -35,14 +38,16 @@
             align-items: center;
         }
         .server .message-icon {
-            width: 16px;
-            height: 16px;
+            width: 32px;
+            height: 32px;
             background-image: url('images/icon16.png'); /* Adjust path as necessary */
-            background-size: cover;
+            background-size: contain;
             margin-right: 10px;
+            flex-shrink: 0;
         }
         .server .message-text {
             flex-grow: 1;
+            overflow-wrap: break-word
         }
         .server {
             background-color: #e5e5ea;
