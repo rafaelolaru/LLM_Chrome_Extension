@@ -2,18 +2,12 @@
 let messages = [];
 
 document.addEventListener('DOMContentLoaded', function() {
-    initializeChat();
-});
-
-function initializeChat() {
     loadMessages();
-    setupMessageSubmission();
-}
-
-function setupMessageSubmission() {
     const submitButton = document.getElementById('submit');
     const inputElement = document.getElementById('inputText');
+    const clearMessagesButton = document.getElementById('clearMessages');
 
+    // Setup message submission on 'Send' button click
     submitButton.addEventListener('click', () => {
         const inputText = inputElement.value.trim();
         if (inputText) {
@@ -21,6 +15,34 @@ function setupMessageSubmission() {
             inputElement.value = ''; // Clear input field after sending the message
         }
     });
+
+    // Setup message submission on 'Enter' key press
+    inputElement.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault(); // Prevent the default action to stop it from submitting a form if any
+            submitButton.click(); // Trigger the button click programmatically
+        }
+    });
+
+    // Setup auto-scroll on new input
+    inputElement.addEventListener('input', () => {
+        const chatArea = document.getElementById('chatArea');
+        chatArea.scrollTop = chatArea.scrollHeight;
+    });
+
+    // Setup clear messages on 'Clear Messages' button click
+    clearMessagesButton.addEventListener('click', function() {
+        clearMessages(); // Clear messages locally
+        fetch('http://127.0.0.1:5000/clear_memory', { method: 'DELETE' }) // Call the endpoint to clear server memory
+            .then(response => response.json())
+            .then(data => console.log(data.status))
+            .catch(error => console.error('Error clearing memory:', error));
+    });
+});
+
+function autoScrollChat() {
+    const chatArea = document.getElementById('chatArea');
+    chatArea.scrollTop = chatArea.scrollHeight;
 }
 
 function sendUserMessage(text) {
@@ -41,7 +63,7 @@ function displayMessage({ text, sender }) {
     messageDiv.className = `message ${sender}`;
     messageDiv.innerHTML = getMessageHTML(text, sender);
     chatArea.appendChild(messageDiv);
-    chatArea.scrollTop = chatArea.scrollHeight;
+    autoScrollChat();
 }
 
 function getMessageHTML(text, sender) {
@@ -59,7 +81,11 @@ function getMessageHTML(text, sender) {
 
 function saveMessages() {
     chrome.storage.local.set({'chatHistory': messages}, function() {
-        logError('saving');
+        if (chrome.runtime.lastError) {
+            console.error('Error saving messages:', chrome.runtime.lastError);
+        } else {
+            console.log('Chat history saved.');
+        }
     });
 }
 
@@ -74,24 +100,12 @@ function loadMessages() {
     });
 }
 
-function setupMessageSubmission() {
+function setupEnterKeyListener() {
     const inputElement = document.getElementById('inputText');
-
-    // Event listener for the button
-    const submitButton = document.getElementById('submit');
-    submitButton.addEventListener('click', () => {
-        const inputText = inputElement.value.trim();
-        if (inputText) {
-            sendUserMessage(inputText);
-            inputElement.value = ''; // Clear input field after sending the message
-        }
-    });
-
-    // Event listener for the Enter key
     inputElement.addEventListener('keypress', (event) => {
-        if (event.key === 'Enter') { // 13 is the Enter key
-            event.preventDefault(); // Prevent the default action to stop it from submitting a form if any
-            submitButton.click(); // Trigger the button click programmatically
+        if (event.key === 'Enter') {
+            event.preventDefault(); // Prevent the default action
+            document.getElementById('submit').click(); // Trigger the button click programmatically
         }
     });
 }
@@ -102,10 +116,15 @@ function fetchArticleContentAndSendMessage(inputText) {
     });
 }
 
-function logError(context) {
-    if (chrome.runtime.lastError) {
-        console.error(`Error ${context} to storage: ${chrome.runtime.lastError}`);
-    } else if (context === 'saving') {
-        console.log('Chat history saved.');
-    }
+function clearMessages() {
+    messages = []; // Clear the local messages array
+    chrome.storage.local.remove('chatHistory', function() {
+        if (!chrome.runtime.lastError) {
+            console.log('Chat history cleared from storage.');
+            const chatArea = document.getElementById('chatArea');
+            chatArea.innerHTML = ''; // Clear the chat area UI
+        } else {
+            console.error('Error clearing chat history from storage:', chrome.runtime.lastError);
+        }
+    });
 }
