@@ -6,10 +6,10 @@ einops
 safetensors
 torch
 xformers
-langchain
+langchain_community 
 ctransformers[cuda]
 chromadb
 sentence-transformers
 fastapi
 uvicorn
-llama_index @ git+https://github.com/run-llama/llama_index
+tiktoken
