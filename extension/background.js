@@ -31,7 +31,7 @@ function sendMessageToServer(chatContent, articleContent, sendResponse) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ chat: chatContent, content: articleContent })
+        body: JSON.stringify({ query: chatContent, context: articleContent })
     })
     .then(response => response.json())
     .then(data => {
