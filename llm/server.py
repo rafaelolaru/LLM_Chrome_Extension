@@ -26,9 +26,9 @@ async def manipulate_text(data: ChatRequest):
     context = data.context if data.context else ""
     conversation_history=chat_memory.get_history()
     if "deep context" in data.query:
-        print("run_my_rag")
-        result = lm.run_my_rag(query=data.query, 
-                               context=data.context, 
+        print("run_my_new_rag")
+        result = lm.run_my_new_rag(query=data.query, 
+                               article_context=data.context, 
                                conversation_history=conversation_history)
     else:
         print("ask_llm")
