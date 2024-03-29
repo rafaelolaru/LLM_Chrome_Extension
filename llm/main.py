@@ -2,12 +2,15 @@ import torch
 from transformers import pipeline, AutoModelForCausalLM, \
     AutoTokenizer, BitsAndBytesConfig
 from langchain_community.llms import HuggingFacePipeline
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+# from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain.chains import RetrievalQA
-from langchain_community.vectorstores import Chroma
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.schema.document import Document
+from langchain.chains import RetrievalQA, LLMChain, StuffDocumentsChain, ReduceDocumentsChain, MapReduceDocumentsChain
+
+# from langchain_community.retrievers import RetrievalQ
+from langchain_community.vectorstores import Chroma, FAISS
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.docstore.document import Document
+# from langchain.schema.document import Document
 from typing import Optional
 from llama_index.core.agent import ReActAgent
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
@@ -15,18 +18,24 @@ from llama_index.core import VectorStoreIndex, SummaryIndex
 from llama_index.core import Document as llama_Document
 from llama_index.core import StorageContext
 from llama_index.core import Settings
-from langchain.agents import AgentType
-from langchain_community.tools import (wikipedia, wikidata, google_search)
+from langchain.agents import AgentType, initialize_agent
+from langchain_community.tools import (wikipedia, wikidata)
 # from llama_index import ServiceContext
+import promptlayer
 import tempfile
 import shutil
 import os
+from langchain.chains.summarize import load_summarize_chain
 from langchain_community.utilities import GoogleSearchAPIWrapper
 from langchain_core.tools import Tool
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.tools.tavily_search import TavilySearchResults, TavilyAnswer
+from langchain_core.prompts.prompt import PromptTemplate
 import urllib.request
-
-
+import tiktoken
+import pandas as pd
+import json
+from pathlib import Path as p
 import os
 
 os.environ["GOOGLE_CSE_ID"] = "006924ad473b24a37"
@@ -53,16 +62,21 @@ class LanguageModel:
             use_cache=True,
             device_map="auto",
             # max_length=1024,
-            max_new_tokens=1000,
+            max_new_tokens=512,
             do_sample=True,
-            top_k=10,
+            top_k=6,
             num_return_sequences=1,
             eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.eos_token_id,
         )
         self.llm = HuggingFacePipeline(pipeline=self.pipeline)
         Settings.llm = self.llm
-        self.metadata = "are u ok now"
+
+
+    def num_tokens_from_string(self, string: str) -> int:
+        encoding = self.encoding
+        num_tokens = len(encoding.encode(string))
+        return num_tokens
 
     def generate_prompt(self, user_prompt, context="", conversation_history=""):
         system_prompt = (
@@ -116,26 +130,24 @@ class LanguageModel:
             return self.ask_llm(user_prompt=query,
                                 context=context, 
                                 conversation_history=conversation_history)
-        documents = [Document(page_content=context)] # metadata={"source": "local"}
+        context = [Document(page_content=context)] # metadata={"source": "local"}
         # print(context)
         # Splitting context into manageable pieces
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=30)
-        all_splits = text_splitter.split_documents(documents)
-
-        for split in enumerate(all_splits):
-            print(split)
-        
-        # Embedding documents
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)
+        print(text_splitter)
+        # all_splits = text_splitter.split_documents(documents)
+        documents = text_splitter.split_documents(context)
         model_name = "sentence-transformers/all-mpnet-base-v2"
         model_kwargs = {"device": "cuda"}
         embeddings = HuggingFaceEmbeddings(model_name=model_name, model_kwargs=model_kwargs)
-        vectordb = Chroma.from_documents(documents=all_splits, embedding=embeddings)
+        vectordb = FAISS.from_documents(documents, embeddings)
         retriever = vectordb.as_retriever()
+
         
         # Setting up and running the RetrievalQA process
         qa = RetrievalQA.from_chain_type(
             llm=self.llm,
-            chain_type="map_reduce",  # Adjust this as needed
+            chain_type="map_reduce", 
             retriever=retriever,
             verbose=True
         )
@@ -144,6 +156,50 @@ class LanguageModel:
         print(response)
         return response['result']
     
+    def run_my_refined_rag(self, query, context="", conversation_history=""):
+        # TODO: implement a sliding window mechanism
+        if not context:
+            return self.ask_llm(user_prompt=query,
+                                context=context, 
+                                conversation_history=conversation_history)
+        question_prompt_template = """
+                  Please provide a summary of the following text.
+                  TEXT: {text}
+                  SUMMARY:
+                  """
+
+        context = [Document(page_content=context)] # metadata={"source": "local"}
+        # print(context)
+        # Splitting context into manageable pieces
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=784, chunk_overlap=50)
+        # all_splits = text_splitter.split_documents(documents)
+        documents = text_splitter.split_documents(context)
+
+        question_prompt = PromptTemplate(
+            template=question_prompt_template, input_variables=["text"]
+        )
+
+        refine_prompt_template = """
+                    Write a concise summary of the following text delimited by triple backquotes.
+                    Return your response in bullet points which covers the key points of the text.
+                    ```{text}```
+                    BULLET POINT SUMMARY:
+                    """
+
+        refine_prompt = PromptTemplate(
+            template=refine_prompt_template, input_variables=["text"]
+        )
+        refine_chain = load_summarize_chain(
+            self.llm,
+            chain_type="refine",
+            question_prompt=question_prompt,
+            refine_prompt=refine_prompt,
+            return_intermediate_steps=True,
+        )
+
+        refine_outputs = refine_chain({"input_documents": documents}, return_only_outputs=True)
+        print(json.dumps(refine_outputs, indent=1))
+        return refine_outputs["output_text"]
 
     def run_my_new_rag(self, query, article_context="", conversation_history=""):
         # documents = [Document(page_content=context)] # metadata={"source": "local"}
@@ -187,15 +243,7 @@ class LanguageModel:
                     )
         search = GoogleSearchAPIWrapper()
 
-        google_search_metadata = ToolMetadata(
-                    name="google_search",
-                    description="Search Google for recent results."
-                    )
-        google_search = Tool(
-            name="google_search",
-            description="Search Google for recent results.",
-            func=search.run
-        )
+        
         def top5_results(query):
             return search.results(query, 5)
         TavilyAnswer_tool = TavilyAnswer(max_results=1, func= top5_results)
@@ -252,6 +300,7 @@ class LanguageModel:
             """
             f"You also get an article that you can use to get answers from, if you deem necessary: {article_context}"
         )
+        agent = initialize_agent(tools, llm, agent="zero-shot-react-description", verbose=True)
         response = agent.query(query)
         print (response)
         return str(response)

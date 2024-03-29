@@ -13,3 +13,5 @@ sentence-transformers
 fastapi
 uvicorn
 tiktoken
+langchain-text-splitters
+llama-index
