@@ -124,19 +124,19 @@ class LanguageModel:
         
         return "yes" in full_response.lower()
 
-    def run_my_rag(self, query, context="", conversation_history=""):
+    def run_my_rag(self, query, article_context="", conversation_history=""):
         # TODO: implement a sliding window mechanism
-        if not context:
+        if not article_context:
             return self.ask_llm(user_prompt=query,
-                                context=context, 
+                                context=article_context, 
                                 conversation_history=conversation_history)
-        context = [Document(page_content=context)] # metadata={"source": "local"}
+        article_context = [Document(page_content=article_context)] # metadata={"source": "local"}
         # print(context)
         # Splitting context into manageable pieces
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)
         print(text_splitter)
         # all_splits = text_splitter.split_documents(documents)
-        documents = text_splitter.split_documents(context)
+        documents = text_splitter.split_documents(article_context)
         model_name = "sentence-transformers/all-mpnet-base-v2"
         model_kwargs = {"device": "cuda"}
         embeddings = HuggingFaceEmbeddings(model_name=model_name, model_kwargs=model_kwargs)

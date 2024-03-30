@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Authenticate</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Arial", sans-serif;
+        background-color: #f4f7f6;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .login-container {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        width: 300px;
+      }
+
+      .login-container h2 {
+        color: #333333;
+        margin-bottom: 20px;
+      }
+
+      input[type="text"],
+      input[type="password"] {
+        width: calc(100% - 20px);
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        box-sizing: border-box;
+      }
+
+      button {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        color: white;
+        font-size: 16px;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        margin-top: 5px;
+      }
+
+      button#loginButton {
+        background-color: #5cb85c;
+      }
+
+      button#loginButton:hover {
+        background-color: #4cae4c;
+      }
+
+      button#goToRegister {
+        background-color: #5bc0de;
+      }
+
+      button#goToRegister:hover {
+        background-color: #31b0d5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-container">
+      <h2>Login</h2>
+      <input type="text" id="username" placeholder="Username" />
+      <input type="password" id="password" placeholder="Password" />
+      <button id="loginButton">Login</button>
+      <!-- Register Button -->
+      <button id="goToRegister">Register</button>
+    </div>
+    <script src="login.js"></script>
+    <script src="navigation.js"></script>
+  </body>
+</html>

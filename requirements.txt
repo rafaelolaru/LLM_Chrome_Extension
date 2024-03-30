@@ -15,3 +15,8 @@ uvicorn
 tiktoken
 langchain-text-splitters
 llama-index
+passlib
+bcrypt==4.0.1
+pydantic[email]
+redis
+pyjwt
