@@ -11,16 +11,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (password === confirmPassword) {
       // Passwords match, proceed with registration
-      fetch(
-        "https://62fa-2a02-2f09-300f-ca00-bd6d-f9de-3152-e064.ngrok-free.app/register",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email, username, password }),
-        }
-      )
+      fetch("https://rafaelolaru.xyz/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, username, password }),
+      })
         .then((response) => {
           if (!response.ok) {
             throw new Error("Network response was not ok");

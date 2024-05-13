@@ -48,18 +48,15 @@ function sendMessageToServer(chatContent, articleContent, sendResponse) {
     }
 
     // Now, with the token available, make the fetch request
-    fetch(
-      "https://62fa-2a02-2f09-300f-ca00-bd6d-f9de-3152-e064.ngrok-free.app/manipulate",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // Correctly include the Authorization header
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ query: chatContent, context: articleContent }),
-      }
-    )
+    fetch("https://rafaelolaru.xyz/manipulate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // Correctly include the Authorization header
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ query: chatContent, context: articleContent }),
+    })
       .then((response) => {
         if (!response.ok) {
           throw new Error("Network response was not ok");

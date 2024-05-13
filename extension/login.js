@@ -5,16 +5,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const token = items.access_token;
     if (token) {
       // Call the verify_token endpoint to check token validity
-      fetch(
-        "https://62fa-2a02-2f09-300f-ca00-bd6d-f9de-3152-e064.ngrok-free.app/verify_token",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
+      fetch("https://rafaelolaru.xyz/verify_token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
         .then((response) => response.json())
         .then((data) => {
           if (data.valid) {
@@ -43,16 +40,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const password = document.getElementById("password").value;
 
     // Proceed with login
-    fetch(
-      "https://62fa-2a02-2f09-300f-ca00-bd6d-f9de-3152-e064.ngrok-free.app/authenticate",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      }
-    )
+    fetch("https://rafaelolaru.xyz/authenticate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username, password }),
+    })
       .then((response) => {
         if (!response.ok) {
           // This throws an error and skips to the catch block
