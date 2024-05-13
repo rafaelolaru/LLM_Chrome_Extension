@@ -30,16 +30,52 @@ document.addEventListener("DOMContentLoaded", function () {
     chatArea.scrollTop = chatArea.scrollHeight;
   });
 
+  const moreOptionsButton = document.getElementById("moreOptions");
+  const additionalButtons = document.getElementById("additionalButtons");
+
+  moreOptionsButton.addEventListener("click", function () {
+    additionalButtons.classList.toggle("show");
+  });
+
+  const deauthButton = document.getElementById("deauthenticate");
+  deauthButton.addEventListener("click", function () {
+    // Remove the access token from chrome.storage.sync
+    chrome.storage.sync.remove("access_token", function () {
+      if (!chrome.runtime.lastError) {
+        console.log("Access token removed successfully.");
+        // Redirect to login.html after the token has been removed
+        window.location.href = "login.html";
+      } else {
+        console.error("Error removing access token:", chrome.runtime.lastError);
+      }
+    });
+  });
+
   // Setup clear messages on 'Clear Messages' button click
   clearMessagesButton.addEventListener("click", function () {
-    clearMessages(); // Clear messages locally
-    fetch(
-      "https://62fa-2a02-2f09-300f-ca00-bd6d-f9de-3152-e064.ngrok-free.app/clear_memory",
-      { method: "DELETE" }
-    ) // Call the endpoint to clear server memory
-      .then((response) => response.json())
-      .then((data) => console.log(data.status))
-      .catch((error) => console.error("Error clearing memory:", error));
+    // Clear messages locally
+    clearMessages();
+
+    // Retrieve the access token from chrome.storage.sync
+    chrome.storage.sync.get("access_token", function (data) {
+      const token = data.access_token;
+      if (!token) {
+        console.error("No access token available.");
+        return; // Exit if no token is found
+      }
+
+      // With the token, call the endpoint to clear server memory
+      fetch("https://rafaelolaru.xyz/clear_memory", {
+        method: "DELETE",
+        headers: {
+          // Include the Authorization header with the fetched token
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => console.log(data.status))
+        .catch((error) => console.error("Error clearing memory:", error));
+    });
   });
 });
 

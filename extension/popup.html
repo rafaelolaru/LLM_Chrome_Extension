@@ -66,10 +66,12 @@
         padding: 0 15px;
       }
       #submit,
-      #clearMessages {
+      #moreOptions,
+      #clearMessages,
+      #deauthenticate {
         padding: 10px 20px;
         border: none;
-        color: white;
+        background-color: #dc3545;
         border-radius: 20px;
         cursor: pointer;
         white-space: nowrap;
@@ -82,12 +84,55 @@
       #submit:hover {
         background-color: #0056b3;
       }
+
       #clearMessages {
         background-color: #ff4757;
         margin-left: 10px;
       }
       #clearMessages:hover {
         background-color: #ff6b81;
+      }
+
+      #deauthenticate {
+        background-color: #dc3545;
+        color: white;
+      }
+      #deauthenticate:hover {
+        background-color: #bd2130;
+      }
+
+      #moreOptions:hover {
+        background-color: #bd2130;
+      }
+
+      /* Responsive adjustments for smaller screens */
+      @media (max-width: 600px) {
+        #inputText {
+          flex-basis: 100%; /* Input takes full width on small screens */
+          margin: 0 0 10px 0; /* Space between input and buttons */
+        }
+
+        button {
+          flex-basis: calc(33.333% - 10px); /* Three buttons, minus margin */
+          margin: 5px 0;
+        }
+
+        .additional-buttons {
+          display: none; /* Hidden by default */
+          flex-direction: column; /* Stack the buttons vertically */
+          position: absolute; /* Positioning relative to the parent */
+          bottom: 60px; /* Positioned above the 'More' button */
+          right: 10px; /* Aligned to the right side */
+          background-color: #fafafa;
+          border-radius: 20px;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+          padding: 10px;
+          z-index: 3; /* Ensures it's on top of other elements */
+        }
+
+        .show {
+          display: flex; /* Show the buttons when 'More' is clicked */
+        }
       }
     </style>
   </head>
@@ -96,7 +141,11 @@
     <div id="inputArea">
       <input type="text" id="inputText" placeholder="Type a message..." />
       <button id="submit">Send</button>
-      <button id="clearMessages">Clear</button>
+      <button id="moreOptions">More</button>
+    </div>
+    <div id="additionalButtons" class="additional-buttons">
+      <button id="clearMessages">Clear Messages</button>
+      <button id="deauthenticate">De-authenticate</button>
     </div>
     <script src="popup.js"></script>
   </body>
