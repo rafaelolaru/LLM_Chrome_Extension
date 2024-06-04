@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends, Security, status
 from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 from fastapi.middleware.cors import CORSMiddleware
-from main import lm, chat_memory
+from main import lm
 from pydantic import BaseModel, EmailStr
 import redis
 import jwt
@@ -49,24 +49,6 @@ users_redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_respo
 conversation_redis_client = redis.Redis(host='localhost', port=6379, db=1, decode_responses=True)
 
 conversation_manager = ConversationHistoryManager(conversation_redis_client)
-def format_conversation_history_for_prompt(conversation_manager, username: str) -> str:
-        # Retrieve the user's conversation history
-        history = conversation_manager.get_conversation_history(username)
-        formatted_entries = []
-        for i, entry in enumerate(history):
-            user_message = entry.split(" Assistant: ")[0].replace("User: ", "").strip()
-            assistant_message = entry.split(" Assistant: ")[1].strip() if " Assistant: " in entry else ""
-            if i == 0:
-                formatted_entry = f"<s>[INST] {user_message} [/INST]"
-            else:
-                formatted_entry = f"[INST] {user_message} [/INST]"
-            if assistant_message:
-                formatted_entry += f" {assistant_message}"
-            formatted_entries.append(formatted_entry)
-
-        formatted_history = " ".join(formatted_entries)
-
-        return formatted_history
 
 def delete_conversations(conversation_manager, username: str):
     with conversation_manager.lock:
@@ -158,34 +140,34 @@ async def read_users_me(current_user: UserRegister = Depends(get_current_user)):
 @app.post("/manipulate")
 async def manipulate_text(data: ChatRequest, token: str = Depends(oauth2_scheme)):
     context = data.context if data.context else ""
-    print(f'hello?')
     username = get_username_from_token(token=token)
-    print(f'username: {username}')
 
+    # Retrieve the conversation history
+    conversation_history = conversation_manager.get_conversation_history(username)
+
+    # Add the user query to the conversation history before passing it to the LLM
+    conversation_manager.add_message(username, "user", data.query)
+
+    # Ask the LLM
     if "article" in data.query or "page" in data.query:
-        print('run_my_reduced_rag')
         result = lm.run_my_reduced_rag(query=data.query,
-                               context=data.context, 
-                               conversation_history=format_conversation_history_for_prompt(
-                                   conversation_manager=conversation_manager,
-                                   username=username))
-    else: 
-        print("ask_llm")
+                                       context=context, 
+                                       conversation_history=conversation_history)
+    else:
         result = lm.ask_llm(user_prompt=data.query, 
                             context=context, 
-                            conversation_history=format_conversation_history_for_prompt(
-                                conversation_manager=conversation_manager,
-                                username=username))
-        
-    conversation_manager.add_message(username, data.query, result)
-    print(format_conversation_history_for_prompt(conversation_manager=conversation_manager,username=username))
+                            conversation_history=conversation_history)
+
+    # Add the assistant's response to the conversation history
+    conversation_manager.add_message(username, "assistant", result)
+
     return {"result": result}
+
+
 
 @app.delete("/clear_memory")
 def clear_memory(token: str = Depends(oauth2_scheme)):
-    chat_memory.clear_history()
     username = get_username_from_token(token=token)
-    delete_conversations(conversation_manager, username=username)
-    return {"status": "Chat memory cleared"}
-
+    conversation_manager.clear_conversation_history(username)
+    return {"status": "success", "message": f"Conversation history for {username} cleared."}
 

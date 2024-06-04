@@ -52,7 +52,6 @@ function sendMessageToServer(chatContent, articleContent, sendResponse) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        // Correctly include the Authorization header
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ query: chatContent, context: articleContent }),
@@ -72,6 +71,5 @@ function sendMessageToServer(chatContent, articleContent, sendResponse) {
       });
   });
 
-  // Indicate that the response is asynchronous, to keep the message channel open
   return true;
 }

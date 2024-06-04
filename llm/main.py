@@ -42,16 +42,12 @@ from transformers import AutoConfig, AutoModelForCausalLM
 class LanguageModel:
     def __init__(self, model_id):
         self.quantization_config = BitsAndBytesConfig(
-            
-            # load_in_4bit=True,
-            llm_int8_threshold=6.0,
-            load_in_8bit=True,
-            # llm_int8_enable_fp32_cpu_offload = True,
-            #load_in_4bit_fp32_cpu_offload=True,
-            
-            #bnb_4bit_compute_dtype=torch.float16,
-            #bnb_4bit_quant_type="nf4",
-            #bnb_4bit_use_double_quant=True,
+            # llm_int8_threshold=6.0,
+            # load_in_8bit=True,
+            load_in_4bit=True, 
+            bnb_4bit_compute_dtype=torch.bfloat16, 
+            bnb_4bit_use_double_quant=True, 
+            bnb_4bit_quant_type="nf4",
         )
         self.tokenizer = AutoTokenizer.from_pretrained(model_id,
                                                        use_fast=False,
@@ -80,44 +76,49 @@ class LanguageModel:
         )
         self.llm = HuggingFacePipeline(pipeline=self.pipeline)
         Settings.llm = self.llm
+        self.device="cuda"
 
+    
+    def _add_context_if_needed(self, user_prompt, context):
+        # Define keywords or conditions to determine if context should be used
+        keywords = ["article", "page", "information about", "details on", "what does it say about"]
+        if any(keyword in user_prompt.lower() for keyword in keywords) and context:
+            return f"Considering the following context: {context}, {user_prompt}"
+        return user_prompt
+    
+    def _extract_relevant_response(self, full_response):
+        # Find the last occurrence of the [/INST] marker and return the text after it
+        inst_marker = "[/INST]"
+        inst_index = full_response.rfind(inst_marker)
+        if inst_index != -1:
+            return full_response[inst_index + len(inst_marker):]
+        return full_response
 
-    def num_tokens_from_string(self, string: str) -> int:
-        encoding = self.encoding
-        num_tokens = len(encoding.encode(string))
-        return num_tokens
+    def ask_llm(self, user_prompt, context="", conversation_history=None):
+        if conversation_history is None:
+            conversation_history = []
 
-    def generate_prompt(self, user_prompt, context="", conversation_history=""):
-        system_prompt = (
-            "You are an AI assistant, designed to provide helpful responses in a straightforward "
-            "and sincere manner. You only answer in english, the user does not know any other language."
-            "Your primary goal is to assist users by answering their questions "
-            "directly and succinctly. Focus solely on providing clear and concise answers to the user's "
-            "queries. Your responses should directly address the user's request, providing accurate, "
-            "concise, and useful information as efficiently as possible. Answer strictly to the query"
-            "after <|im_start|>user. Everything before that just use as context. Do not force context"
-            "into query response. Integrate context to the answer only if the query demands it.\n\n"
-        )
-        # f"context\n"
-        # f"{context}"
-        prompt = \
-        f"<s>{conversation_history}" 
-        f"[INST] {user_prompt} [/INST]"
+        # Modify the user prompt to include context if needed
+        modified_user_prompt = self._add_context_if_needed(user_prompt, context)
 
-        return prompt
+        # Add the new user message to the conversation history
+        conversation_history.append({"role": "user", "content": modified_user_prompt})
 
-    def ask_llm(self, user_prompt, context="",conversation_history=""):
-        runtime_flag = "cuda:0"  
+        # Print the conversation history for debugging
+        print(f"Conversation history: {conversation_history}")
+
+        # Use apply_chat_template to prepare the inputs for the model
+        encodeds = self.tokenizer.apply_chat_template(conversation_history, return_tensors="pt")
+        model_inputs = encodeds.to(self.device)
         
-        full_prompt = self.generate_prompt(user_prompt, context, conversation_history)
+        # Generate the response
+        generated_ids = self.model.generate(model_inputs, max_new_tokens=1000, do_sample=True)
+        decoded = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
         
-        assistant_inst = "<assistant_response>"
-        # print(f"context:{context}")
-        inputs = self.tokenizer(full_prompt, return_tensors="pt").to(runtime_flag)
-        outputs = self.model.generate(**inputs, max_new_tokens=500)[0]
-        full_response = self.tokenizer.decode(outputs, skip_special_tokens=True)
-        response_start_idx = full_response.find(assistant_inst) + len(assistant_inst)
-        return full_response[response_start_idx:].strip()
+        # Extract the relevant part of the response
+        response = self._extract_relevant_response(decoded[0])
+        
+        return response.strip()
 
 
     def run_my_rag(self, query, article_context="", conversation_history=""):
@@ -177,12 +178,18 @@ class LanguageModel:
         return refine_outputs["output_text"]
 
 
-class ChatMemory:
-    def __init__(self):
-        self.history = []
+# class ChatMemory:
+#     def __init__(self):
+#         self.history = []
 
-        self.history = []
+#     def add_message(self, role, content):
+#         """Add a new message to the history."""
+#         self.history.append({"role": role, "content": content})
+
+#     def get_conversation(self):
+#         """Return the entire conversation as a single string."""
+#         return "\n".join([f'{msg["role"]}: {msg["content"]}' for msg in self.history])
 
 model_id = "mistralai/Mistral-7B-Instruct-v0.2"
 lm = LanguageModel(model_id=model_id)
-chat_memory = ChatMemory()
+# chat_memory = ChatMemory()
