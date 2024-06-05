@@ -29,6 +29,7 @@ class UserAuth(BaseModel):
 class ChatRequest(BaseModel):
     query: str
     context: str = ""
+    
 app = FastAPI()
 
 app.add_middleware(
